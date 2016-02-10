@@ -1,0 +1,13 @@
+{
+  "name": "vending-machine",
+  "version": "0.0.1",
+  "description": "vending machine representation",
+  "author": "Tim Man",
+  "dependencies": {
+    "express": "^4.13.3",
+    "lodash": "^4.3.0"
+  },
+  "scripts": {
+    "test": "mocha"
+  }
+}
