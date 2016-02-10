@@ -4,10 +4,14 @@
   "description": "vending machine representation",
   "author": "Tim Man",
   "dependencies": {
-    "express": "^4.13.3",
-    "lodash": "^4.3.0"
+    "lodash": "^4.3.0",
+    "loglevel": "^1.4.0"
   },
   "scripts": {
     "test": "mocha"
+  },
+  "devDependencies": {
+    "chai": "^3.5.0",
+    "mocha": "^2.4.5"
   }
 }
