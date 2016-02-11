@@ -5,7 +5,8 @@
   "author": "Tim Man",
   "dependencies": {
     "lodash": "^4.3.0",
-    "loglevel": "^1.4.0"
+    "loglevel": "^1.4.0",
+    "sprintf": "^0.1.5"
   },
   "scripts": {
     "test": "mocha"

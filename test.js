@@ -142,9 +142,9 @@ describe('vending.js', function() {
     v.selectProduct('coke')
 
     let tests = [
-      { input: '10p', expected: '0.9', name: 'need more coins' },
+      { input: '10p', expected: 0.9, name: 'need more coins' },
       { input: '13p', expected: undefined, name: 'invalid coin' },
-      { input: '£1', expected: '-0.1', name: 'give change' },
+      { input: '£1', expected: -0.1, name: 'give change' },
     ]
 
     tests.forEach( t => {

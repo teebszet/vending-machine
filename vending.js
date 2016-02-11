@@ -2,6 +2,7 @@
 
 var log = require('loglevel')
 var _ = require('lodash')
+var sprintf = require('sprintf')
 
 const validCoins = {
   '1p'  : 0.01,
@@ -20,9 +21,6 @@ const validProducts = {
   'chocolate milk' : 3.20,
 }
 
-/*
- *  class VendingMachine
- */
 class VendingMachine {
 
   /* Public Methods */
@@ -31,6 +29,10 @@ class VendingMachine {
     this._change = {}
     this._selected
     this._inputCoins = {}
+  }
+
+  showStock() {
+    return JSON.stringify(this._products) 
   }
 
   selectProduct(product) {
@@ -53,19 +55,9 @@ class VendingMachine {
     }
     var input = {}
     input[coin] = 1
-    this._loadGeneric(input, this._inputCoins, validCoins)
-    log.debug(this._inputCoins)
-    return this.calculateChange()
-  }
-
-  calculateChange() {
-    if (!this._selected) {
-      return
-    }
-    var price = validProducts[this._selected]
-    var input_sum = this._sumCoins(this._inputCoins)
-    log.debug(price, input_sum)
-    return price - input_sum
+    this._loadGeneric(input, this._inputCoins, _.keys(validCoins))
+    var diff = this.calculateChange()
+    return diff
   }
 
   loadCoins(coins) {
@@ -80,11 +72,29 @@ class VendingMachine {
     return this._removeGeneric(coins, this._change, _.keys(validCoins))
   }
 
-  removeProducts(products) {
-    return this._removeGeneric(products, this._products, _.keys(validProducts))
+  /* Private methods */
+  handleTransaction(diff) {
+    if (diff > 0) {
+      log.info(sprintf("need £%.2d more", diff))
+      return 0
+    } 
+    if (diff <= 0) {
+      log.info(sprintf("thank you. here is your %s", this._selected))
+      this._products[this._selected]--
+      this._selected = undefined
+      if (diff < 0) {
+        log.info("here is your change") 
+        
+      } 
+    } 
   }
 
-  /* Private methods */
+  calculateChange() {
+    if (!this._selected) {
+      return
+    }
+    return validProducts[this._selected] - this._sumCoins(this._inputCoins)
+  }
 
   _sumCoins(coins) {
     var sum = 0
