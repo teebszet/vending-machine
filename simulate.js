@@ -34,7 +34,7 @@ function run(v) {
               if (!response) {
                 insert()
               } else {
-                log.info(response)
+                log.info(JSON.stringify(response))
                 run(v)
               }
             })
