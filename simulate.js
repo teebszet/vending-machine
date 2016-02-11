@@ -24,7 +24,10 @@ function run(v) {
       case 'buy':
         log.info(v.showStock())
         rl.question('what would you like?\n', product => {
-          v.selectProduct(product) 
+          if (v.selectProduct(product) === undefined) {
+            log.info('invalid product') 
+            run(v)
+          }
           function insert() {
             rl.question('insert coin (1p|2p|10p|20p|50p|£1|£2)\n', coin => {
               let response = v.insertCoin(coin)  
@@ -39,13 +42,21 @@ function run(v) {
           insert()
         })
         return
-      case 'loadchange':
-        log.info('current stock')
-          //TODO
-        return
       case 'loadproducts':
-        log.info('something')
-          //TODO
+        log.info('current stock', v.showStock())
+        rl.question('submit change in JSON like {"coke":2}\n', product => {
+          v.loadProducts(JSON.parse(product))
+          log.info('updated stock', v.showStock())
+          run(v)
+        })
+        return
+      case 'loadchange':
+        log.info('current change', v.showChange())
+        rl.question('submit change in JSON like {"10p":2, "£1":100}\n', coins => {
+          v.loadCoins(JSON.parse(coins))
+          log.info('updated change', v.showChange())
+          run(v)
+        })
         return
     }
     run(v)

@@ -25,24 +25,23 @@ class VendingMachine {
 
   /* Public Methods */
   constructor() {
-    this._products = {}
-    this._change = {}
     this._selected
     this._inputCoins = {}
-  }
 
-  showStock() {
-    return JSON.stringify(this._products) 
+    // don't mutate these outside of the store methods
+    this._products = {}
+    this._change = {}
   }
 
   selectProduct(product) {
     if (validProducts[product] === undefined) {
       return
     }
-    if (!this._products[product]) {
+    if (!this.showStock()[product]) {
       return
     }
     this._selected = product
+    log.debug("change in machine:", this.showChange())
     return this._selected
   }
 
@@ -56,44 +55,89 @@ class VendingMachine {
     var input = {}
     input[coin] = 1
     this._loadGeneric(input, this._inputCoins, _.keys(validCoins))
-    var diff = this.calculateChange()
-    return diff
-  }
-
-  loadCoins(coins) {
-    return this._loadGeneric(coins, this._change, _.keys(validCoins))
-  }
-
-  loadProducts(products) {
-    return this._loadGeneric(products, this._products, _.keys(validProducts))
-  }
-
-  removeCoins(coins) {
-    return this._removeGeneric(coins, this._change, _.keys(validCoins))
+    return this.handleTransaction()
   }
 
   /* Private methods */
   handleTransaction(diff) {
+    var diff = this.calculateDiff()
     if (diff > 0) {
-      log.info(sprintf("need £%.2d more", diff))
+      log.info(sprintf("need £%.2f more", diff))
       return 0
     } 
     if (diff <= 0) {
-      log.info(sprintf("thank you. here is your %s", this._selected))
-      this._products[this._selected]--
-      this._selected = undefined
-      if (diff < 0) {
-        log.info("here is your change") 
-        
-      } 
+      var response = {}
+      this
+        .removeSelectedProduct(response)
+        .handleChange(response, diff)
+      return response
     } 
+    return
   }
 
-  calculateChange() {
+  handleChange(response, diff) {
+    this.loadCoins(this._inputCoins)
+    this._inputCoins = {}
+    response['change'] = sprintf("£%.2f", diff)
+    response['changecoins'] = this.removeChange(diff)
+    log.debug("change in machine:", this.showChange())
+  }
+
+  calculateDiff() {
     if (!this._selected) {
       return
     }
-    return validProducts[this._selected] - this._sumCoins(this._inputCoins)
+    let price = validProducts[this._selected]
+    let input = this._sumCoins(this._inputCoins)
+    return _.round(price - input, 2)
+  }
+
+  removeChange(diff) {
+    if (diff < 0) {
+      return 
+    }
+
+    var coins = {}
+    var availableChange = this.showChange()
+    if (this._sumCoins(availableChange) < diff) {
+      log.info('not enough change. need to load more!') 
+      coins = availableChange
+    }
+    else {
+      let a_coins = []
+      _.forEach(availableChange, (value, key) => {
+        let coin = {
+          label: key,
+          value: validCoins[key],
+          quantity: value, 
+        }
+        a_coins.push(coin)
+      })
+
+      let sorted_coins = _(a_coins)
+        .sortBy('value')
+        .value()
+        .reverse()
+
+      //TODO can probably optimise this algorithm
+      let a_change = []
+      _.forEach(sorted_coins, (coin) => {
+        while (coin.quantity > 0 && diff >= coin.value) {
+          a_change.push(coin.label)
+          coin.quantity --
+          diff = _.round(diff - coin.value, 2)
+        }
+      })
+
+      _.forEach(a_change, (coinlabel) => {
+        if (coins[coinlabel] === undefined) {
+          coins[coinlabel] = 0
+        }
+        coins[coinlabel] ++
+      })
+    }
+    this.removeCoins(coins)
+    return coins
   }
 
   _sumCoins(coins) {
@@ -105,7 +149,27 @@ class VendingMachine {
     return sum
   }
 
+  /* Store methods */
+  showStock() {
+    let stockCopy = this._products
+    return stockCopy
+  }
+
+  showChange() {
+    let changeCopy = this._change
+    return changeCopy
+  }
+
+  loadCoins(coins) {
+    return this._loadGeneric(coins, this._change, _.keys(validCoins))
+  }
+
+  loadProducts(products) {
+    return this._loadGeneric(products, this._products, _.keys(validProducts))
+  }
+
   _loadGeneric(input, load_into, valid) {
+    log.debug(input)
     _(input)
       .pick(valid)
       .forEach( (value, key) => {
@@ -115,6 +179,21 @@ class VendingMachine {
         load_into[key] += value
       })
     return load_into
+  }
+
+  removeSelectedProduct(response) {
+    if (!this._products[this._selected]) {
+      return 
+    }
+    this._products[this._selected]--
+    response['product'] = this._selected
+    this._selected = undefined
+    response['success'] = 1
+    return this
+  }
+
+  removeCoins(coins) {
+    return this._removeGeneric(coins, this._change, _.keys(validCoins))
   }
 
   _removeGeneric(input, remove_from, valid) {
@@ -132,9 +211,6 @@ class VendingMachine {
     remove_from = temp_remove_from
     return remove_from
   }
-
-  giveProduct() {}
-
 }
 
 module.exports = VendingMachine
